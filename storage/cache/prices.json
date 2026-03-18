@@ -1,0 +1,67 @@
+{
+    "generated_at": "2026-03-18T03:40:48+03:00",
+    "status": "ok",
+    "errors": [],
+    "data": {
+        "xauusd": {
+            "name": "XAU\/USD \/ عقود الذهب",
+            "label": "COMEX Gold Futures",
+            "symbol": "GC=F",
+            "unit": "$",
+            "price": 5005.9,
+            "change": 11.9,
+            "change_pct": 0.24,
+            "as_of": "2026-03-18T03:30:45+03:00"
+        },
+        "dxy": {
+            "name": "مؤشر الدولار",
+            "label": "US Dollar Index",
+            "symbol": "DX-Y.NYB",
+            "unit": "",
+            "price": 99.76,
+            "change": 0.05,
+            "change_pct": 0.05,
+            "as_of": "2026-03-17T12:56:17+03:00"
+        },
+        "brent": {
+            "name": "نفط برنت",
+            "label": "Brent Crude",
+            "symbol": "BZ=F",
+            "unit": "$",
+            "price": 103.15,
+            "change": 2.94,
+            "change_pct": 2.93,
+            "as_of": "2026-03-18T03:26:08+03:00"
+        },
+        "spx": {
+            "name": "مؤشر S&P 500",
+            "label": "S&P 500",
+            "symbol": "^GSPC",
+            "unit": "",
+            "price": 6716.09,
+            "change": 16.71,
+            "change_pct": 0.25,
+            "as_of": "2026-03-17T23:34:52+03:00"
+        },
+        "silver": {
+            "name": "الفضة",
+            "label": "Silver Futures",
+            "symbol": "SI=F",
+            "unit": "$",
+            "price": 79.47,
+            "change": -0.79,
+            "change_pct": -0.99,
+            "as_of": "2026-03-18T03:30:41+03:00"
+        },
+        "btc": {
+            "name": "البيتكوين",
+            "label": "Bitcoin",
+            "symbol": "BTC-USD",
+            "unit": "$",
+            "price": 73629.16,
+            "change": -1231.92,
+            "change_pct": -1.65,
+            "as_of": "2026-03-18T03:38:00+03:00"
+        }
+    }
+}

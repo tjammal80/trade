@@ -4,7 +4,9 @@ require_admin();
 use HubTrend\Services\ReportRepository;
 $repo = new ReportRepository();
 $slug = trim((string)($_GET['slug'] ?? ''));
-$report = $slug ? $repo->findBySlug($slug) : null;
+// findRawBySlug bypasses validation gating so admin can open and fix any report,
+// even one that currently fails validation (e.g. has blank required fields).
+$report = $slug ? $repo->findRawBySlug($slug) : null;
 $report = $report ?: [
     'title' => '',
     'slug' => '',
@@ -59,7 +61,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $report = array_merge($report, $payload);
-    $validationMode = in_array($action, ['publish'], true) ? 'publish' : 'draft';
+
+    // Derive validation mode from the FINAL status of the payload, not just the
+    // button clicked. This keeps the form's pre-save validation consistent with
+    // what save() will enforce internally, eliminating false "draft passes but
+    // save throws" errors when status is 'published'.
+    $validationMode = ($report['status'] === 'published') ? 'publish' : 'draft';
     $errors = $repo->validate($report, $validationMode);
 
     if (empty($errors) && $action === 'preview') {
@@ -70,7 +77,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors) && in_array($action, ['save', 'save_draft', 'publish'], true)) {
         try {
-            $savedSlug = $repo->save($report);
+            // Pass the same mode to save() so it doesn't re-derive from status
+            // and produce a different result than the pre-save validation above.
+            $savedSlug = $repo->save($report, $validationMode);
             $message = $action === 'publish' ? 'تم نشر التقرير بنجاح.' : 'تم حفظ التقرير بنجاح.';
             admin_flash($message);
             header('Location: /admin/report-edit.php?slug=' . urlencode($savedSlug));

@@ -107,7 +107,8 @@ function parse_diagnostic_rows(?string $text): array
 {
     $rows = [];
     foreach (parse_lines($text) as $line) {
-        $parts = array_map('trim', explode('|', $line));
+        // Limit to 4 parts so price_impact can safely contain the | character.
+        $parts = array_map('trim', explode('|', $line, 4));
         if (count($parts) < 4) continue;
         $rows[] = [
             'indicator' => $parts[0],

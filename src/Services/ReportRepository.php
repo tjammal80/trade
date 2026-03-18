@@ -5,6 +5,8 @@ namespace HubTrend\Services;
 
 class ReportRepository
 {
+    private array $scanCache = [];
+
     public function all(bool $publishedOnly = true): array
     {
         return $this->scan($publishedOnly)['valid'];
@@ -42,6 +44,26 @@ class ReportRepository
             if (($item['slug'] ?? '') === $slug) return $item;
         }
         return null;
+    }
+
+    /**
+     * Load a report directly from the filesystem by slug, bypassing validation
+     * gating. Use this in the admin edit form so that reports with validation
+     * errors can still be opened and corrected instead of silently disappearing.
+     */
+    public function findRawBySlug(string $slug): ?array
+    {
+        $path = $this->reportPath($slug);
+        if (!is_file($path)) return null;
+        $raw = (string) file_get_contents($path);
+        $data = json_decode($this->stripBom($raw), true);
+        if (!is_array($data)) return null;
+        $data = $this->normalize($data);
+        // Always ensure slug is set from the filename so it can't be lost.
+        if (($data['slug'] ?? '') === '') {
+            $data['slug'] = $slug;
+        }
+        return $data;
     }
 
     public function findPublishedBySlug(string $slug): ?array
@@ -155,13 +177,17 @@ class ReportRepository
         return $errors;
     }
 
-    public function save(array $payload): string
+    /**
+     * Save a report. Pass $mode explicitly ('draft' or 'publish') so that the
+     * caller's validation intent is honoured without re-deriving it from status.
+     * Defaults to 'auto' for backward-compatible callers (e.g. saveFromJson).
+     */
+    public function save(array $payload, string $mode = 'auto'): string
     {
         $payload = $this->normalize($payload);
-        $errors = $this->validate($payload, 'auto');
+        $errors = $this->validate($payload, $mode);
         if (!empty($errors)) {
-            throw new \RuntimeException(implode("
-", $errors));
+            throw new \RuntimeException(implode("\n", $errors));
         }
 
         $slug = $payload['slug'] ?: $this->slugify($payload['title'] ?? 'report');
@@ -274,9 +300,8 @@ class ReportRepository
 
     private function scan(bool $publishedOnly): array
     {
-        static $cache = [];
         $key = $publishedOnly ? 'published' : 'all';
-        if (isset($cache[$key])) return $cache[$key];
+        if (isset($this->scanCache[$key])) return $this->scanCache[$key];
 
         $valid = [];
         $invalid = [];
@@ -311,7 +336,7 @@ class ReportRepository
             return strcmp((string)($b['updated_at'] ?? ''), (string)($a['updated_at'] ?? ''));
         });
 
-        return $cache[$key] = ['valid' => $valid, 'invalid' => $invalid];
+        return $this->scanCache[$key] = ['valid' => $valid, 'invalid' => $invalid];
     }
 
     private function normalize(array $payload): array
@@ -362,7 +387,9 @@ class ReportRepository
         if (!is_dir($dir)) {
             @mkdir($dir, 0775, true);
         }
-        $stamp = date('Ymd-His');
+        // Include microseconds so rapid successive saves never overwrite each
+        // other's backup file (e.g. two saves within the same second).
+        $stamp = date('Ymd-His') . '-' . substr((string) microtime(false), 2, 4);
         $target = $dir . '/' . $stamp . '-' . $reason . '.json';
         @copy($sourcePath, $target);
     }
@@ -387,7 +414,7 @@ class ReportRepository
 
     private function clearStatCache(): void
     {
-        // static cache resets per request; explicit no-op for clarity.
+        $this->scanCache = [];
     }
 
     private function stripBom(string $text): string
